@@ -1,0 +1,26 @@
+{
+  "name": "WebSocket Server",
+  "description": "Laptev",
+  "version": "0.1",
+  "manifest_version": 2,
+  "minimum_chrome_version": "44",
+  "offline_enabled": true,
+  "permissions": ["system.network"],
+  "optional_permissions": ["background"],
+
+  "sockets": {
+    "tcp": {
+      "connect": "*"
+    },
+
+    "tcpServer": {
+      "listen": "*"
+    }
+  },
+  
+  "app": {
+    "background": {
+      "scripts": ["sha1.js", "http.js", "server.js"]
+    }
+  }
+}
