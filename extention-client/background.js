@@ -62,41 +62,49 @@ chrome.tabs.getAllInWindow(null, function(tabs){
     // }
   };
   // for (var i = 0; i < tabs.length; i++) {
-  // chrome.tabs.sendRequest(tabs[i].id, { action: "xxx" });                         
+  // chrome.tabs.sendRequest(tabs[i].id, { action: "xxx" });
 });
 
-chrome.runtime.onMessage.addListener(
-  function(req, sender, sendResponse) {
-    switch (req.action) {
-      case 'connect':
-        connect(req.wsUrl);
-        sendResponse({
-          msg: "ok"
-        });
-        break;
-      default:
-        false;
-    }  
-  }
-);
+// chrome.runtime.onMessage.addListener(
+//   function(req, sender, sendResponse) {
+//     switch (req.action) {
+//       case 'connect':
+//         connect(req.wsUrl);
+//         sendResponse({
+//           msg: "ok"
+//         });
+//         break;
+//       default:
+//         false;
+//     }
+//   }
+// );
 
 function connect(url) {
   ws = new WebSocket(url);
   console.log(ws);
-  
+
   ws.addEventListener('message', function(e) {
   	var data = JSON.parse(e.data) || false;
   	// console.log(data);
-  
+
   	manageVkPlayer(data);
   });
+
+	chrome.commands.onCommand.addListener(function(command) {
+		manageVkPlayer(command);
+	});
 }
 
+connect('ws://localhost:9999');
 
-chrome.commands.onCommand.addListener(function(command) {
-	manageVkPlayer(command);
-});
-
+function wsSend(id = false, params) {
+	$.extend(params, {
+		id: id,
+		fromExt: true
+	});
+	ws.send(JSON.stringify(params));
+}
 //  chrome.commands.getAll(function(command) {
 // 	console.log('Command:', command);
 // });
@@ -106,65 +114,65 @@ var code_inj = "var el = document.createElement('script');" +
     "document.body.appendChild(el);";
 
 function getCode(code) {
-    return "var el = document.createElement('script');" + 
+    return "var el = document.createElement('script');" +
       "el.textContent = '"+code.replace(/'/g, "\\'")+"';" +
-      "document.body.appendChild(el);" + 
+      "document.body.appendChild(el);" +
       "asd;";
 }
 
 function manageVkPlayer(data) {
-	switch(data.act || data) 
+	switch(data.act || data)
 	{
 		case 'vk_get_player':
 			chrome.tabs.executeScript(vkTabId, {
-    			code: "var title = document.getElementsByClassName('top_audio_player_title')[0].innerText; var isPlaying = document.getElementById('top_audio_player').classList.contains('top_audio_player_playing'); [title,isPlaying] "
-    		},
-    			function(result) { 
-    				ws.send(JSON.stringify({
-			            act: "get_player",
-			            title: result[0][0],
-			            isPlaying: result[0][1]
-			        }));
-            	}
-            );
+    		code: "var title = document.getElementsByClassName('top_audio_player_title')[0].innerText; var isPlaying = document.getElementById('top_audio_player').classList.contains('top_audio_player_playing'); [title,isPlaying] "
+    	},
+    		function(result) {
+					wsSend(data.id, {
+						act: "get_player",
+						title: result[0][0],
+						isPlaying: result[0][1]
+					});
+        }
+      );
 			break;
 
 		case 'vk_get_playlist':
 			chrome.tabs.executeScript(vkTabId, {
-    			code: "localStorage.getItem('audio_v20_pl');"
-    		},
-    			function(result) { 
-    				var res = JSON.parse(JSON.parse(result[0]));
-    				ws.send(JSON.stringify({
-			            act: "get_playlist",
-			            playlist: res.list
-			        }));
-            	}
-            );
-            break;
+    		code: "JSON.parse(JSON.parse(localStorage.getItem('audio_v20_pl')));"
+    	},
+    		function(result) {
+    			var res = result[0];
+    			wsSend(data.id, {
+			    	act: "get_playlist",
+			    	playlist: res.list
+			  	});
+      	}
+      );
+      break;
 
-        case 'vk_playTrack':
-    		chrome.tabs.executeScript(vkTabId, {
-    			code: getCode("executeCommand('"+data.act+"', '"+data.trackId+"')")
-    		});
-    		break;
+    case 'vk_playTrack':
+    	chrome.tabs.executeScript(vkTabId, {
+    		code: getCode("executeCommand('"+data.act+"', '"+data.trackId+"')")
+  		});
+    	break;
 
-		case 'vk_prev': 
+		case 'vk_prev':
 			chrome.tabs.executeScript(vkTabId, {
-    			code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_prev')[0].click();"
-    		});
-    		break;
+    		code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_prev')[0].click();"
+    	});
+    	break;
 
-		case 'vk_playPause': 
+		case 'vk_playPause':
 			chrome.tabs.executeScript(vkTabId, {
-    			code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_play')[0].click();"
-    		});
-    		break;
+    		code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_play')[0].click();"
+    	});
+    	break;
 
-    	case 'vk_next': 
+    	case 'vk_next':
 			chrome.tabs.executeScript(vkTabId, {
-    			code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_next')[0].click();"
-    		});
-    		break;
+    		code: "document.getElementsByClassName('top_audio_player_btn top_audio_player_next')[0].click();"
+    	});
+    	break;
 	}
 }

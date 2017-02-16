@@ -61,6 +61,10 @@ if (http.Server && http.WebSocketServer) {
   wsServer.addEventListener('request', function(req) {
     console.log('Client connected');
     var socket = req.accept();
+    socket.send(JSON.stringify({
+      act: 'get_wsID',
+      wsID: socket.pSocket_.socketId
+    }));
     connectedSockets.push(socket);
 
     // chrome.runtime.onSuspend.addListener(function() {
@@ -70,8 +74,18 @@ if (http.Server && http.WebSocketServer) {
     // When a message is received on one socket, rebroadcast it on all
     // connected sockets.
     socket.addEventListener('message', function(e) {
-      for (var i = 0; i < connectedSockets.length; i++)
-        connectedSockets[i].send(e.data);
+      var data = JSON.parse(e.data);
+      if (data.fromExt && data.id) {
+        for (var i = 0; i < connectedSockets.length; i++) {
+          if(connectedSockets[i].pSocket_.socketId == data.id) {
+            connectedSockets[i].send(e.data);
+            break;
+          }
+        }
+      } else {
+        for (var i = 0; i < connectedSockets.length; i++)
+          connectedSockets[i].send(e.data);
+      }
     });
 
     // When a socket is closed, remove it from the list of connected sockets.

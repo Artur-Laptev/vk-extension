@@ -5,15 +5,14 @@
 // *****************************************
 
 var address = window.location.href.replace('http', 'ws'),
-    ws = new WebSocket(address);
+    ws = new WebSocket(address),
+    wsID = false;
 
-function playTrack() {
-    if(ws) {
-         ws.send(JSON.stringify({
-            act: "vk_playTrack",
-            trackId: "42187022_456239196"
-        }));
-    }
+function wsSend(params) {
+  $.extend(params, {
+    id: wsID
+  });
+  ws.send(JSON.stringify(params));
 }
 
 $(document).ready(function () {
@@ -49,7 +48,25 @@ $(document).ready(function () {
 // });
     // var socket = io(window.location.href, { reconnection: false });
 
-    
+    var content = document.getElementById('plwrap');
+    content.addEventListener('touchstart', function(event) {
+        this.allowUp = (this.scrollTop > 0);
+        this.allowDown = (this.scrollTop < this.scrollHeight - this.clientHeight);
+        this.slideBeginY = event.pageY;
+    });
+
+    content.addEventListener('touchmove', function(event) {
+        var up = (event.pageY > this.slideBeginY);
+        var down = (event.pageY < this.slideBeginY);
+        this.slideBeginY = event.pageY;
+        if ((up && this.allowUp) || (down && this.allowDown)) {
+            event.stopPropagation();
+        }
+        else {
+            event.preventDefault();
+        }
+    });
+
 
     var positionChanging = false;
 
@@ -92,10 +109,10 @@ $(document).ready(function () {
     // setInterval( function() {
     //     socket.emit('player:getCurrentTrack');
     // }, 1000);
-    
+
     // socket.on('player:currentTrack', function (data) {
     //     console.log(data);
-        
+
     //     setIsPlaying(data.isPlaying);
 
     //     if (data.isPlaying) {
@@ -142,123 +159,86 @@ $(document).ready(function () {
 
 
     function onPlay() {
-        ws.send(JSON.stringify({
-            act: "vk_playPause"
-        }));
-        // socket.emit('player:isPlaying', {
-        //     isPlaying: true
-        // });
+        wsSend({ act: "vk_playPause" })
         setIsPlaying(true);
     }
 
 
     function onPause() {
-        ws.send(JSON.stringify({
-            act: "vk_playPause"
-        }));
-        // socket.emit('player:isPlaying', {
-        //     isPlaying: false
-        // });
+        wsSend({ act: "vk_playPause" });
         setIsPlaying(false);
     }
 
     function onNext() {
-        ws.send(JSON.stringify({
-            act: "vk_next"
-        }));
-        // socket.emit('player:next');
+        wsSend({ act: "vk_next" });
     }
 
     function onPrev() {
-        ws.send(JSON.stringify({
-            act: "vk_prev"
-        }));
-        // socket.emit('player:prev');
+        wsSend({ act: "vk_prev" });
     }
 
     function onSliderChanged(event, ui) {
-        positionChanging = true;
-
-        api("", "seek", ui.value, function (ok) {
-            currentTime.innerText = ui.value.toString().toShortTimeString();
-        });
-
-        positionChanging = false;
+        // positionChanging = true;
+        //
+        // api("", "seek", ui.value, function (ok) {
+        //     currentTime.innerText = ui.value.toString().toShortTimeString();
+        // });
+        //
+        // positionChanging = false;
     }
 
 
     function onVolumeSliderChanged(event, ui) {
-        api("", "volume", ui.value, function (ok) {
-
-        });
+        // api("", "volume", ui.value, function (ok) {
+        //
+        // });
     }
 
     function setIsPlaying(isPlaying) {
-        if (isPlaying) {
-            playerControls.className = 'state-play';
-        } else {
-            playerControls.className = 'state-pause';
-        }
+      playerControls.className = isPlaying ? 'state-play' : 'state-pause';
     }
-
-    // function api(method, command, commandParam, cb) {
-    //     var postData = {};
-    //     if (command)
-    //         postData = { v: 1, command: command, commandParam: commandParam };
-
-    //     //Safari on iOS and IE on Windows Phone doesn't most of time doesn't send data in the post
-    //     //so using x-data header to pass commands instead of request body
-    //     $.ajax({
-    //         url: "/api" + method,
-    //         cache: false,
-    //         headers: { "cache-control": "max-age=0", "x-data": JSON.stringify(postData)},
-    //         type: "POST",
-    //         contentType: "application/json",
-    //         dataType: "json",
-    //         //data: JSON.stringify(postData),
-    //         success: function (data) {
-    //             cb(data.response);
-    //         }
-    //     });
-    // }
 
     ws.addEventListener('open', function() {
         console.log('Connected');
-        setInterval(function () {
-            ws.send(JSON.stringify({
-                act: "vk_get_player"
-            }));
-        }, 1000);
-
-        ws.send(JSON.stringify({
-            act: "vk_get_playlist"
-        }));
     });
 
+    function initPlayer() {
+      wsSend({
+        id: wsID,
+        act: "vk_get_playlist"
+      });
+
+      setInterval(function () {
+        wsSend({ act: "vk_get_player" });
+      }, 1000);
+    }
+
     ws.addEventListener('message', function(e) {
-        var data = JSON.parse(e.data);
-        switch(data.act) 
-        {
-            case 'get_player':
-                // console.log(data);
-                currentAudioTitle.innerText = data.title
-                setIsPlaying(data.isPlaying);
-                break;
-
-            case 'get_playlist':
-                console.log(data);
-
-                for (var i = 0; i < 5; i++) {
-                    var el = $('<tr><td>' + data.playlist[i][4] + '</td><td>' + data.playlist[i][3] + '</td></tr>').attr('track_id', data.playlist[i][1] + "_" + data.playlist[i][0]);
-                    el.click( function() {
-                        ws.send(JSON.stringify({
-                            act: "vk_playTrack",
-                            trackId: $(this).attr('track_id')
-                        }));
-                    });
-                    $('#playlist').append(el);
-                }
-                break;
-        }
+      var data = JSON.parse(e.data);
+      switch(data.act)
+      {
+        case 'get_wsID':
+          wsID = data.wsID;
+          if(wsID)
+            initPlayer();
+          break;
+        case 'get_player':
+          currentAudioTitle.innerText = data.title
+          setIsPlaying(data.isPlaying);
+          break;
+        case 'get_playlist':
+          for (var i = 0; i < 10; i++) {
+            var el = $('<li><div class="plItem"><div class="plTitle">' + data.playlist[i][4] + " - " + data.playlist[i][3] + '</div><div class="plLength">' + "5:10" + '</div></div></li>')
+                .attr('track_id', data.playlist[i][1] + "_" + data.playlist[i][0]);
+            el.click( function() {
+              wsSend({
+                act: "vk_playTrack",
+                trackId: $(this).attr('track_id')
+              });
+            });
+            $('#plList').append(el);
+          }
+          break;
+      }
     });
 });

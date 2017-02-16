@@ -11,19 +11,20 @@
     <script type="text/javascript" src="public/js/index.js"></script>
 </head>
 <body>
-<div onclick="playTrack()" >playTrack</div>
-<table id="playlist">
-</table>
+  <div class="container">
+    <div id="plwrap">
+      <ul id="plList"></ul>
+    </div>
     <div id="playerControl">
-        <div>
-            <div class="coverButtonsBlock">
+    <div>
+            <!-- <div class="coverButtonsBlock">
                 <div style="position: relative; height: 188px">
-                    <!--<button id="vk" class="coverButton">
+                    <button id="vk" class="coverButton">
                         <svg viewBox="0 0 60 45">
                             <use xlink:href="img/player.svg#vk"></use>
                         </svg>
-                    </button>-->
-                    <!--<button id="like" class="coverButton">
+                    </button>
+                    <button id="like" class="coverButton">
                         <svg viewBox="0 0 76 80">
                             <use xlink:href="img/player.svg#like"></use>
                         </svg>
@@ -37,27 +38,26 @@
                         <svg viewBox="0 0 14.24 13.37">
                             <use xlink:href="img/player.svg#repeat"></use>
                         </svg>
-                    </button>-->
+                    </button>
                 </div>
-            </div>
-        </div>
+            </div> -->
 
 
-        <span id="currentAudioTitle"></span>
-        <span id="currentAudioArtist"></span>
-    </div>
+      <span id="currentAudioTitle"></span>
+      <span id="currentAudioArtist"></span>
+  </div>
 
     <div class="progress">
-        <section id="progressBarContainer">
-            <div id="progressBarBg"></div>
-            <div id="progressBar"></div>
-        </section>
+      <section id="progressBarContainer">
+        <div id="progressBarBg"></div>
+        <div id="progressBar"></div>
+      </section>
 
 
-        <div style="width: auto; height: 20pt; line-height: 20pt; margin-left: 12pt; margin-right: 12pt">
-            <span id="currentTime">0:00</span>
-            <span id="duration">0:00</span>
-        </div>
+      <div style="width: auto; height: 20pt; line-height: 20pt; margin-left: 12pt; margin-right: 12pt">
+        <span id="currentTime">0:00</span>
+        <span id="duration">0:00</span>
+      </div>
     </div>
 
     <div id="playerControls" class="state-play">
@@ -91,6 +91,8 @@
         </section>
         <img id="volumeMax" class="volumeIcon" src="public/img/volume.png" />
     </div>
+  </div>
+</div>
 
     <script type="text/javascript" src="public/lib/svg4everybody.js"></script>
 </body>
